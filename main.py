@@ -1,4 +1,24 @@
-from __init__ import *
+import datetime
+import logging
+import asyncio
+import os
+import time
+from urllib3 import disable_warnings
+from urllib3.exceptions import InsecureRequestWarning
+from discord import Intents, utils, Bot
+from discord.ext import tasks
+from utils import recovery_birthday
+from constants import (
+    TARGETED_HOUR_BIRTHDAY_REMINDER,
+    DEFAULT_BIRTHDAY_WISHING_SENTENCE,
+    DEFAULT_FIRSTNAME_KEY,
+    DEFAULT_NAME_KEY,
+    IUT_SERV_ID,
+    DEFAULT_GENERAL_CHANNEL,
+    DEFAULT_TIMEZONE,
+)
+from _Token import TOKEN
+
 
 intents = Intents.default()
 bot: Bot = Bot(intents=intents)
@@ -13,6 +33,8 @@ async def on_ready():
     logger_main.info(
         "Logged in as %s (%s)", bot.user.name, bot.user.id
     )  # Bot connection confirmation
+
+    await wait_for_auto_start_birthday_reminder()
 
 
 async def wait_for_auto_start_birthday_reminder():
@@ -52,7 +74,7 @@ async def wait_for_auto_start_birthday_reminder():
     asyncio.create_task(birthday_reminder.start())
 
 
-@tasks.loop(hours=1)
+@tasks.loop(hours=24)
 async def birthday_reminder(
     sentence: str = DEFAULT_BIRTHDAY_WISHING_SENTENCE,
     channel_name: str = DEFAULT_GENERAL_CHANNEL,
@@ -63,17 +85,20 @@ async def birthday_reminder(
         channel_name (str): name of discord channel you want to send a message
     """
     all_birthday: tuple[dict[str, str]] = await recovery_birthday(
-        date=datetime.now(), logger=logger_main
+        date=datetime.datetime.now(), logger=logger_main
     )
     logger_main.info("called")
     try:
         logger_main.info(f"{len(all_birthday)} birthday(s) recovered")
         for birth in all_birthday:
-            sentence += f"\n\t-{birth[DEFAULT_FIRSTNAME_KEY]} {birth[DEFAULT_NAME_KEY]}"
+            sentence += f"\n- {birth[DEFAULT_FIRSTNAME_KEY]} {birth[DEFAULT_NAME_KEY]}"
+            if birth['formation'] == 'CELEBRITE':
+                wikipedia_link = f"https://fr.wikipedia.org/wiki/{birth['prenom']}_{birth['nom']}"
+                sentence += f" ({wikipedia_link.replace('https://', 'Wiki Link: ')})"
         sentence += (
-            "Nous "
+            "\nNous "
             + ("lui" if len(all_birthday) == 1 else "leur")
-            + " un joyeux anniversaire"
+            + " souhaitons un joyeux anniversaire"
         )
 
         logger_main.debug(f"Sentence value: {sentence}")
@@ -85,6 +110,7 @@ async def birthday_reminder(
         logger_main.info("No birthday for today")
 
 
+
 if __name__ == "__main__":
     disable_warnings(
         InsecureRequestWarning
@@ -94,7 +120,6 @@ if __name__ == "__main__":
     os.environ["TZ"] = DEFAULT_TIMEZONE
     time.tzset()
 
-    time.sleep(1000)
     log_format = (
         "%(asctime)s | %(levelname)s | %(filename)s | %(funcName)s : %(message)s"
     )

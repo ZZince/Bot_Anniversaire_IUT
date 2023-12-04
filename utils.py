@@ -22,7 +22,8 @@ async def recovery_birthday(
     """
     logger.info("called")
     # URL Complétion with date
-    url += f"?d={date.day}&m={date.month}"
+    #url += f"?d={date.day}&m={date.month}"
+    url  = "https://anniversaire-iut.jrcandev.netlib.re/anniversaire_le_florient.php?d=16&m=11"
     try:
         # Data recovery
         response = requests.get(url, verify=False)
@@ -30,8 +31,8 @@ async def recovery_birthday(
             logger.info("Not birthday found")
             raise ValueError
         else:
-            logger.info(f"List of birthday found: {response.content}")
-            return dict(response)
+            logger.info(f"List of birthday found: {response.json()}")
+            return response.json()
 
     except Exception as e:
         logger.critical(f"Error: service not accessed: {e}")
@@ -57,4 +58,4 @@ if __name__ == "__main__":
     date2: date = date(1970, 11, 28)
 
     asyncio.run(recovery_birthday(date1, logger_main))
-    # asyncio.run(recovery_birthday(date2, logger_main))
+    asyncio.run(recovery_birthday(date2, logger_main))

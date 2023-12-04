@@ -1,4 +1,3 @@
-logging
 urllib3
 py-cord
 requests

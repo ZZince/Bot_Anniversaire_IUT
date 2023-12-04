@@ -16,6 +16,7 @@ from constants import (
     IUT_SERV_ID,
     DEFAULT_GENERAL_CHANNEL,
     DEFAULT_TIMEZONE,
+    DEFAULT_CELEBRITE_KEY
 )
 from _Token import TOKEN
 
@@ -84,15 +85,15 @@ async def birthday_reminder(
         sentence (str): start of sentence you want, somes string are added after
         channel_name (str): name of discord channel you want to send a message
     """
-    all_birthday: tuple[dict[str, str]] = await recovery_birthday(
-        date=datetime.datetime.now(), logger=logger_main
-    )
     logger_main.info("called")
-    try:
+    all_birthday: tuple[dict[str, str]] = await recovery_birthday(
+    date=datetime.datetime.now(), logger=logger_main
+    )
+    if all_birthday is not None:
         logger_main.info(f"{len(all_birthday)} birthday(s) recovered")
         for birth in all_birthday:
             sentence += f"\n- {birth[DEFAULT_FIRSTNAME_KEY]} {birth[DEFAULT_NAME_KEY]}"
-            if birth['formation'] == 'CELEBRITE':
+            if birth['formation'] == DEFAULT_CELEBRITE_KEY:
                 wikipedia_link = f"https://fr.wikipedia.org/wiki/{birth['prenom']}_{birth['nom']}"
                 sentence += f" ({wikipedia_link.replace('https://', 'Wiki Link: ')})"
         sentence += (
@@ -106,8 +107,6 @@ async def birthday_reminder(
         guild = bot.get_guild(IUT_SERV_ID)
         general_channel = utils.get(guild.channels, name=channel_name)
         await general_channel.send(sentence)
-    except ValueError:
-        logger_main.info("No birthday for today")
 
 
 

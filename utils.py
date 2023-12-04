@@ -21,15 +21,12 @@ async def recovery_birthday(
         ValueError: If no birthday are found
     """
     logger.info("called")
-    # URL Complétion with date
-    #url += f"?d={date.day}&m={date.month}"
-    url  = "https://anniversaire-iut.jrcandev.netlib.re/anniversaire_le_florient.php?d=16&m=11"
     try:
         # Data recovery
         response = requests.get(url, verify=False)
-        if response.content == "null":  # No birthday
+        if response.json() == None:  # No birthday
             logger.info("Not birthday found")
-            raise ValueError
+            return None
         else:
             logger.info(f"List of birthday found: {response.json()}")
             return response.json()

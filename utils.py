@@ -4,7 +4,7 @@ import asyncio
 from datetime import date
 from urllib3.exceptions import InsecureRequestWarning
 from urllib3 import disable_warnings
-from constants import URL_BIRTHDAY_RECOVERY
+from Priv import URL_BIRTHDAY_RECOVERY
 
 
 async def recovery_birthday(

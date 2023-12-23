@@ -13,12 +13,12 @@ from constants import (
     DEFAULT_BIRTHDAY_WISHING_SENTENCE,
     DEFAULT_FIRSTNAME_KEY,
     DEFAULT_NAME_KEY,
-    IUT_SERV_ID,
     DEFAULT_GENERAL_CHANNEL,
     DEFAULT_TIMEZONE,
     DEFAULT_CELEBRITE_KEY
 )
 from _Token import TOKEN
+from Priv import IUT_SERV_ID
 
 
 intents = Intents.default()

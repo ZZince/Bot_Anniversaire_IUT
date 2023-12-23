@@ -18,7 +18,7 @@ from constants import (
     DEFAULT_CELEBRITE_KEY
 )
 from _Token import TOKEN
-from Priv import IUT_SERV_ID
+from _Priv import IUT_SERV_ID
 
 
 intents = Intents.default()

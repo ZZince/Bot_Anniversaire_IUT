@@ -100,8 +100,8 @@ async def birthday_reminder(channel_name: str = DEFAULT_GENERAL_CHANNEL):
 
         logger_main.debug(f"Sentence value: {sentence}")
 
-        print(os.getenv("IUT_SERV_ID"))
-        guild = bot.get_guild(os.getenv("IUT_SERV_ID"))
+        logging.debug(f"Valeur de os.getenv('IUT_SERV_ID'): {os.getenv('IUT_SERV_ID')}")
+        guild = bot.get_guild(int(os.getenv("IUT_SERV_ID")))
         general_channel = utils.get(guild.channels, name=channel_name)
         await general_channel.send(sentence)
 

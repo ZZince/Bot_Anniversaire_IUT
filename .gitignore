@@ -1,4 +1,4 @@
-_Token.py
 __pycache__
 _Priv.py
-/Logs
+.env
+/logs

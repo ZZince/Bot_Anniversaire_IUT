@@ -1,0 +1,11 @@
+version: '3'
+
+services:
+  anniversaire-discord-bot:
+    build: .
+    container_name: BOT_ANNIVERSAIRE_IUT
+    restart: always
+    volumes:
+      - .:/usr/src/bot
+    env_file:
+      - .env

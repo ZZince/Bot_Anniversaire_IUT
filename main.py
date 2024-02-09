@@ -10,15 +10,12 @@ from discord.ext import tasks
 from utils import recovery_birthday
 from constants import (
     TARGETED_HOUR_BIRTHDAY_REMINDER,
-    DEFAULT_BIRTHDAY_WISHING_SENTENCE,
     DEFAULT_FIRSTNAME_KEY,
     DEFAULT_NAME_KEY,
     DEFAULT_GENERAL_CHANNEL,
     DEFAULT_TIMEZONE,
-    DEFAULT_CELEBRITE_KEY
+    DEFAULT_CELEBRITE_KEY,
 )
-from _Token import TOKEN
-from _Priv import IUT_SERV_ID
 
 
 intents = Intents.default()
@@ -76,25 +73,24 @@ async def wait_for_auto_start_birthday_reminder():
 
 
 @tasks.loop(hours=24)
-async def birthday_reminder(
-    sentence: str = DEFAULT_BIRTHDAY_WISHING_SENTENCE,
-    channel_name: str = DEFAULT_GENERAL_CHANNEL,
-):
+async def birthday_reminder(channel_name: str = DEFAULT_GENERAL_CHANNEL):
     """Send a message on discord channel specified with sentence
     Args:
-        sentence (str): start of sentence you want, somes string are added after
         channel_name (str): name of discord channel you want to send a message
     """
     logger_main.info("called")
     all_birthday: tuple[dict[str, str]] = await recovery_birthday(
-    date=datetime.datetime.now(), logger=logger_main
+        date=datetime.datetime.now(), logger=logger_main
     )
     if all_birthday is not None:
+        sentence = "Aujourd'hui nous souhaitons l'anniversaire de: "
         logger_main.info(f"{len(all_birthday)} birthday(s) recovered")
         for birth in all_birthday:
             sentence += f"\n- {birth[DEFAULT_FIRSTNAME_KEY]} {birth[DEFAULT_NAME_KEY]}"
-            if birth['formation'] == DEFAULT_CELEBRITE_KEY:
-                wikipedia_link = f"https://fr.wikipedia.org/wiki/{birth['prenom']}_{birth['nom']}"
+            if birth["formation"] == DEFAULT_CELEBRITE_KEY:
+                wikipedia_link = (
+                    f"https://fr.wikipedia.org/wiki/{birth['prenom']}_{birth['nom']}"
+                )
                 sentence += f" ({wikipedia_link.replace('https://', 'Wiki Link: ')})"
         sentence += (
             "\nNous "
@@ -104,10 +100,10 @@ async def birthday_reminder(
 
         logger_main.debug(f"Sentence value: {sentence}")
 
-        guild = bot.get_guild(IUT_SERV_ID)
+        print(os.getenv("IUT_SERV_ID"))
+        guild = bot.get_guild(os.getenv("IUT_SERV_ID"))
         general_channel = utils.get(guild.channels, name=channel_name)
         await general_channel.send(sentence)
-
 
 
 if __name__ == "__main__":
@@ -122,28 +118,21 @@ if __name__ == "__main__":
     log_format = (
         "%(asctime)s | %(levelname)s | %(filename)s | %(funcName)s : %(message)s"
     )
-    log_level = logging.DEBUG
+    log_level = logging.INFO
 
     logging.basicConfig(
         level=log_level,
         format=log_format,
     )
 
-    if not os.path.exists("Logs"):
-        os.makedirs("Logs")
+    if not os.path.exists("logs"):
+        os.makedirs("logs")
 
     # Retranscription des logs du script main
     logger_main = logging.getLogger(f"main.py")
-    file_handler_main = logging.FileHandler("Logs/main_logs.txt")
+    file_handler_main = logging.FileHandler("logs/main_logs.txt")
     file_handler_main.setLevel(log_level)
     file_handler_main.setFormatter(logging.Formatter(log_format))
     logger_main.addHandler(file_handler_main)
 
-    # Retranscription des logs du module discord
-    logger_discord = logging.getLogger("discord")
-    file_handler_discord = logging.FileHandler("Logs/discord_logs.txt")
-    file_handler_discord.setLevel(log_level)
-    file_handler_discord.setFormatter(logging.Formatter(log_format))
-    logger_discord.addHandler(file_handler_discord)
-
-    bot.run(TOKEN)
+    bot.run(os.getenv("TOKEN"))

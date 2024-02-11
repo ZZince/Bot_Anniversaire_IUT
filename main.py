@@ -3,6 +3,8 @@ import logging
 import asyncio
 import os
 import time
+from typing import Callable
+from platform import system
 from urllib3 import disable_warnings
 from urllib3.exceptions import InsecureRequestWarning
 from discord import Intents, utils, Bot
@@ -10,11 +12,13 @@ from discord.ext import tasks
 from utils import recovery_birthday
 from constants import (
     TARGETED_HOUR_BIRTHDAY_REMINDER,
+    TARGETED_HOUR_RESET_TOPIC,
     DEFAULT_FIRSTNAME_KEY,
     DEFAULT_NAME_KEY,
     DEFAULT_GENERAL_CHANNEL,
     DEFAULT_TIMEZONE,
     DEFAULT_CELEBRITE_KEY,
+    DEFAULT_TOPIC,
 )
 
 
@@ -32,48 +36,60 @@ async def on_ready():
         "Logged in as %s (%s)", bot.user.name, bot.user.id
     )  # Bot connection confirmation
 
-    await wait_for_auto_start_birthday_reminder()
+    await wait_for_auto_start_function(
+        birthday_reminder, *TARGETED_HOUR_BIRTHDAY_REMINDER
+    )
+    await wait_for_auto_start_function(reset_topic, *TARGETED_HOUR_RESET_TOPIC)
 
 
-async def wait_for_auto_start_birthday_reminder():
-    """Wait the indicated time to start the birthay_reminder loop
+async def wait_for_auto_start_function(
+    function: Callable,
+    hour: int = datetime.datetime.now().hour + 1,
+    minute: int = datetime.datetime.now().minute + 1,
+):
+    """Lance la fonction demandé à l'heure indiquée
+
     Args:
-        current_time (datetime): Current time DEFAULT datetime.datetime.now()
-        target_time (datetime): Time targeted (year/month/day/hour/min/second)
+        function (function): Fonction à lancer
+        hour (int): Heure à laquelle lancer la fonction
+        minute (int): Minute à laquelle lancer la fonction
     """
+
     current_time: datetime.datetime = datetime.datetime.now()
     target_time: datetime.datetime = datetime.datetime(
         current_time.year,
         current_time.month,
         current_time.day,
-        TARGETED_HOUR_BIRTHDAY_REMINDER[0],
-        TARGETED_HOUR_BIRTHDAY_REMINDER[1],
+        hour=hour,
+        minute=minute,
     )
     logger_main.info(f"called")
+    logger_main.debug(f"target_time = {target_time}")
+    logger_main.debug(f"current_time = {current_time}")
+    logger_main.debug(f"Is current_time < target time: {current_time < target_time}")
     # Calculate delay before target time
     if current_time < target_time:
         wait_time: datetime = target_time - current_time
         logging.debug("wait time = %s", wait_time)
     else:
         next_day: datetime.datetime = current_time + datetime.timedelta(days=1)
-        target_time = datetime.datetime(
-            next_day.year,
-            next_day.month,
-            next_day.day,
-            TARGETED_HOUR_BIRTHDAY_REMINDER[0],
-            TARGETED_HOUR_BIRTHDAY_REMINDER[1],
-        )
-        wait_time: datetime.timedelta = target_time - current_time
+        wait_time: datetime.timedelta = next_day - current_time
+        logging.debug("wait time = %s", wait_time)
 
     # waiting until target time
     logging.info("waiting %s seconds", wait_time.total_seconds())
+    logger_main.debug(
+        f"Function is coroutine ? {asyncio.iscoroutinefunction(function)}"
+    )
     await asyncio.sleep(wait_time.total_seconds())
-
-    asyncio.create_task(birthday_reminder.start())
+    asyncio.create_task(function())
 
 
 @tasks.loop(hours=24)
-async def birthday_reminder(channel_name: str = DEFAULT_GENERAL_CHANNEL):
+async def birthday_reminder(
+    channel_name: str = DEFAULT_GENERAL_CHANNEL,
+    guild_id: int = int(os.getenv("IUT_SERV_ID")),
+):
     """Send a message on discord channel specified with sentence
     Args:
         channel_name (str): name of discord channel you want to send a message
@@ -100,10 +116,39 @@ async def birthday_reminder(channel_name: str = DEFAULT_GENERAL_CHANNEL):
 
         logger_main.debug(f"Sentence value: {sentence}")
 
+        new_topic = DEFAULT_TOPIC + "Aujourd'hui: "
+        for birth in all_birthday:
+            if birth["formation"] == DEFAULT_CELEBRITE_KEY:
+                continue
+            else:
+                new_topic += (
+                    f"{birth[DEFAULT_FIRSTNAME_KEY]} {birth[DEFAULT_NAME_KEY]}, "
+                )
+        new_topic = new_topic[:-2]
+
+        logger_main.debug(f"New topic value: {new_topic}")
+
         logging.debug(f"Valeur de os.getenv('IUT_SERV_ID'): {os.getenv('IUT_SERV_ID')}")
-        guild = bot.get_guild(int(os.getenv("IUT_SERV_ID")))
+        guild = bot.get_guild(guild_id)
         general_channel = utils.get(guild.channels, name=channel_name)
         await general_channel.send(sentence)
+        await general_channel.edit(topic=new_topic)
+
+
+@tasks.loop(hours=24)
+async def reset_topic(
+    channel_name: str = DEFAULT_GENERAL_CHANNEL,
+    guild_id: int = int(os.getenv("IUT_SERV_ID")),
+):
+    """Reset the topic of the channel specified
+    Args:
+        channel_name (str): name of discord channel you want to reset the topic
+        guild_id (int): id of the guild where the channel is
+    """
+    logger_main.info("called")
+    guild = bot.get_guild(guild_id)
+    general_channel = utils.get(guild.channels, name=channel_name)
+    await general_channel.edit(topic=DEFAULT_TOPIC)
 
 
 if __name__ == "__main__":
@@ -112,8 +157,9 @@ if __name__ == "__main__":
     )  # Disable preventiv messages from requets module
 
     # Change local timezone
-    os.environ["TZ"] = DEFAULT_TIMEZONE
-    time.tzset()
+    if system() == "Linux":
+        os.environ["TZ"] = DEFAULT_TIMEZONE
+        time.tzset()
 
     log_format = (
         "%(asctime)s | %(levelname)s | %(filename)s | %(funcName)s : %(message)s"
@@ -134,5 +180,7 @@ if __name__ == "__main__":
     file_handler_main.setLevel(log_level)
     file_handler_main.setFormatter(logging.Formatter(log_format))
     logger_main.addHandler(file_handler_main)
+
+    logger_main.info("Platform: %s", system())
 
     bot.run(os.getenv("TOKEN"))

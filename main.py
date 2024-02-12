@@ -44,8 +44,8 @@ async def on_ready():
 
 async def wait_for_auto_start_function(
     function: Callable,
-    hour: int = datetime.datetime.now().hour + 1,
-    minute: int = datetime.datetime.now().minute + 1,
+    hour: int,
+    minute: int,
 ):
     """Lance la fonction demandé à l'heure indiquée
 
@@ -105,9 +105,9 @@ async def birthday_reminder(
             sentence += f"\n- {birth[DEFAULT_FIRSTNAME_KEY]} {birth[DEFAULT_NAME_KEY]}"
             if birth["formation"] == DEFAULT_CELEBRITE_KEY:
                 wikipedia_link = (
-                    f"https://fr.wikipedia.org/wiki/{birth['prenom']}_{birth['nom']}"
+                    f"<https://fr.wikipedia.org/wiki/{birth['prenom']}_{birth['nom']}>"
                 )
-                sentence += f" ({wikipedia_link.replace('https://', 'Wiki Link: ')})"
+                sentence += f" ({wikipedia_link})"
         sentence += (
             "\nNous "
             + ("lui" if len(all_birthday) == 1 else "leur")
@@ -116,7 +116,7 @@ async def birthday_reminder(
 
         logger_main.debug(f"Sentence value: {sentence}")
 
-        new_topic = DEFAULT_TOPIC + "Aujourd'hui: "
+        new_topic = DEFAULT_TOPIC + " Aujourd'hui: "
         for birth in all_birthday:
             if birth["formation"] == DEFAULT_CELEBRITE_KEY:
                 continue
@@ -164,7 +164,7 @@ if __name__ == "__main__":
     log_format = (
         "%(asctime)s | %(levelname)s | %(filename)s | %(funcName)s : %(message)s"
     )
-    log_level = logging.INFO
+    log_level = logging.DEBUG
 
     logging.basicConfig(
         level=log_level,

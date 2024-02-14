@@ -3,7 +3,6 @@ import logging
 import asyncio
 import os
 import time
-from typing import Callable
 from platform import system
 from urllib3 import disable_warnings
 from urllib3.exceptions import InsecureRequestWarning
@@ -36,21 +35,26 @@ async def on_ready():
         "Logged in as %s (%s)", bot.user.name, bot.user.id
     )  # Bot connection confirmation
 
-    await wait_for_auto_start_function(
-        birthday_reminder, *TARGETED_HOUR_BIRTHDAY_REMINDER
+    asyncio.create_task(
+        wait_for_auto_start_birthday_reminder(
+            TARGETED_HOUR_BIRTHDAY_REMINDER[0],
+            TARGETED_HOUR_BIRTHDAY_REMINDER[1],
+        )
     )
-    await wait_for_auto_start_function(reset_topic, *TARGETED_HOUR_RESET_TOPIC)
+    asyncio.create_task(
+        wait_for_auto_start_reset_topic(
+            TARGETED_HOUR_RESET_TOPIC[0], TARGETED_HOUR_RESET_TOPIC[1]
+        )
+    )
 
 
-async def wait_for_auto_start_function(
-    function: Callable,
+async def wait_for_auto_start_birthday_reminder(
     hour: int,
     minute: int,
 ):
     """Lance la fonction demandé à l'heure indiquée
 
     Args:
-        function (function): Fonction à lancer
         hour (int): Heure à laquelle lancer la fonction
         minute (int): Minute à laquelle lancer la fonction
     """
@@ -72,20 +76,55 @@ async def wait_for_auto_start_function(
         wait_time: datetime = target_time - current_time
         logging.debug("wait time = %s", wait_time)
     else:
-        next_day: datetime.datetime = current_time + datetime.timedelta(days=1)
+        next_day: datetime.datetime = target_time + datetime.timedelta(days=1)
         wait_time: datetime.timedelta = next_day - current_time
         logging.debug("wait time = %s", wait_time)
 
     # waiting until target time
     logging.info("waiting %s seconds", wait_time.total_seconds())
-    logger_main.debug(
-        f"Function is coroutine ? {asyncio.iscoroutinefunction(function)}"
-    )
     await asyncio.sleep(wait_time.total_seconds())
-    asyncio.create_task(function())
+    await asyncio.create_task(birthday_reminder.start())
 
 
-@tasks.loop(hours=24)
+async def wait_for_auto_start_reset_topic(
+    hour: int,
+    minute: int,
+):
+    """Lance la fonction demandé à l'heure indiquée
+
+    Args:
+        hour (int): Heure à laquelle lancer la fonction
+        minute (int): Minute à laquelle lancer la fonction
+    """
+
+    current_time: datetime.datetime = datetime.datetime.now()
+    target_time: datetime.datetime = datetime.datetime(
+        current_time.year,
+        current_time.month,
+        current_time.day,
+        hour=hour,
+        minute=minute,
+    )
+    logger_main.info(f"called")
+    logger_main.debug(f"target_time = {target_time}")
+    logger_main.debug(f"current_time = {current_time}")
+    logger_main.debug(f"Is current_time < target time: {current_time < target_time}")
+    # Calculate delay before target time
+    if current_time < target_time:
+        wait_time: datetime = target_time - current_time
+        logging.debug("wait time = %s", wait_time)
+    else:
+        next_day: datetime.datetime = target_time + datetime.timedelta(days=1)
+        wait_time: datetime.timedelta = next_day - current_time
+        logging.debug("wait time = %s", wait_time)
+
+    # waiting until target time
+    logging.info("waiting %s seconds", wait_time.total_seconds())
+    await asyncio.sleep(wait_time.total_seconds())
+    await asyncio.create_task(reset_topic.start())
+
+
+@tasks.loop(minutes=1)
 async def birthday_reminder(
     channel_name: str = DEFAULT_GENERAL_CHANNEL,
     guild_id: int = int(os.getenv("IUT_SERV_ID")),

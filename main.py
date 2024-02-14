@@ -164,7 +164,7 @@ if __name__ == "__main__":
     log_format = (
         "%(asctime)s | %(levelname)s | %(filename)s | %(funcName)s : %(message)s"
     )
-    log_level = logging.DEBUG
+    log_level = logging.INFO
 
     logging.basicConfig(
         level=log_level,

@@ -52,11 +52,11 @@ async def wait_for_auto_start_birthday_reminder(
     hour: int,
     minute: int,
 ):
-    """Lance la fonction demandé à l'heure indiquée
+    """Start function task loop at requested time
 
     Args:
-        hour (int): Heure à laquelle lancer la fonction
-        minute (int): Minute à laquelle lancer la fonction
+        hour (int): Hour of the day when function have to be started
+        minute (int): Minute of the day when function have to be started
     """
 
     current_time: datetime.datetime = datetime.datetime.now()
@@ -90,11 +90,11 @@ async def wait_for_auto_start_reset_topic(
     hour: int,
     minute: int,
 ):
-    """Lance la fonction demandé à l'heure indiquée
+    """Start function task loop at requested time
 
     Args:
-        hour (int): Heure à laquelle lancer la fonction
-        minute (int): Minute à laquelle lancer la fonction
+        hour (int): Hour of the day when function have to be started
+        minute (int): Minute of the day when function have to be started
     """
 
     current_time: datetime.datetime = datetime.datetime.now()
@@ -124,7 +124,7 @@ async def wait_for_auto_start_reset_topic(
     await asyncio.create_task(reset_topic.start())
 
 
-@tasks.loop(minutes=1)
+@tasks.loop(hours=24)
 async def birthday_reminder(
     channel_name: str = DEFAULT_GENERAL_CHANNEL,
     guild_id: int = int(os.getenv("IUT_SERV_ID")),

@@ -145,6 +145,7 @@ async def birthday_reminder(
     if all_birthday is not None:
         student: list[str] = []
         celebrities: list[str] = []
+        message: bool = False
         logger_main.info(f"{len(all_birthday)} birthday(s) recovered")
         for birth in all_birthday:
             if birth["formation"] == DEFAULT_CELEBRITE_KEY:
@@ -156,6 +157,7 @@ async def birthday_reminder(
                     f"{birth[DEFAULT_FIRSTNAME_KEY]} {birth[DEFAULT_NAME_KEY]}"
                 )
         if len(student) > 0:
+            message = True
             sentence = "Aujourd'hui nous souhaitons l'anniversaire de: "
             for birth in student:
                 sentence += f"\n- {birth}"
@@ -165,25 +167,31 @@ async def birthday_reminder(
             for birth in celebrities:
                 sentence += f"\n- {birth}: <https://fr.wikipedia.org/wiki/{birth.replace(' ', '_')}>"
 
-        logger_main.debug(f"Sentence value: {sentence}")
+        if message:
+            logger_main.info("Student's birthday today")
+            logger_main.debug(f"Sentence value: {sentence}")
+            new_topic = DEFAULT_TOPIC + " Aujourd'hui: "
+            for birth in all_birthday:
+                if birth["formation"] == DEFAULT_CELEBRITE_KEY:
+                    continue
+                else:
+                    new_topic += (
+                        f"{birth[DEFAULT_FIRSTNAME_KEY]} {birth[DEFAULT_NAME_KEY]}, "
+                    )
+            new_topic = new_topic[:-2]
 
-        new_topic = DEFAULT_TOPIC + " Aujourd'hui: "
-        for birth in all_birthday:
-            if birth["formation"] == DEFAULT_CELEBRITE_KEY:
-                continue
-            else:
-                new_topic += (
-                    f"{birth[DEFAULT_FIRSTNAME_KEY]} {birth[DEFAULT_NAME_KEY]}, "
-                )
-        new_topic = new_topic[:-2]
+            logger_main.debug(f"New topic value: {new_topic}")
 
-        logger_main.debug(f"New topic value: {new_topic}")
+            logging.debug(
+                f"Valeur de os.getenv('IUT_SERV_ID'): {os.getenv('IUT_SERV_ID')}"
+            )
+            guild = bot.get_guild(guild_id)
+            general_channel = utils.get(guild.channels, name=channel_name)
+            await general_channel.send(sentence)
+            await general_channel.edit(topic=new_topic)
 
-        logging.debug(f"Valeur de os.getenv('IUT_SERV_ID'): {os.getenv('IUT_SERV_ID')}")
-        guild = bot.get_guild(guild_id)
-        general_channel = utils.get(guild.channels, name=channel_name)
-        await general_channel.send(sentence)
-        await general_channel.edit(topic=new_topic)
+        else:
+            logger_main.info("No student's birthday today")
 
 
 @tasks.loop(hours=24)

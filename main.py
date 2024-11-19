@@ -17,6 +17,7 @@ from constants import (
     DEFAULT_GENERAL_CHANNEL,
     DEFAULT_TIMEZONE,
     DEFAULT_CELEBRITE_KEY,
+    DEFAULT_ANCIEN_KEY,
     DEFAULT_TOPIC,
 )
 
@@ -137,21 +138,32 @@ async def birthday_reminder(
     all_birthday: tuple[dict[str, str]] = await recovery_birthday(
         date=datetime.datetime.now(), logger=logger_main
     )
+    all_birthday = [
+        birth for birth in all_birthday if birth["formation"] != DEFAULT_ANCIEN_KEY
+    ]
+
     if all_birthday is not None:
-        sentence = "Aujourd'hui nous souhaitons l'anniversaire de: "
+        student: list[str] = []
+        celebrities: list[str] = []
         logger_main.info(f"{len(all_birthday)} birthday(s) recovered")
         for birth in all_birthday:
-            sentence += f"\n- {birth[DEFAULT_FIRSTNAME_KEY]} {birth[DEFAULT_NAME_KEY]}"
             if birth["formation"] == DEFAULT_CELEBRITE_KEY:
-                wikipedia_link = (
-                    f"<https://fr.wikipedia.org/wiki/{birth['prenom']}_{birth['nom']}>"
+                celebrities.append(
+                    f"{birth[DEFAULT_FIRSTNAME_KEY]} {birth[DEFAULT_NAME_KEY]}"
                 )
-                sentence += f" ({wikipedia_link})"
-        sentence += (
-            "\nNous "
-            + ("lui" if len(all_birthday) == 1 else "leur")
-            + " souhaitons un joyeux anniversaire"
-        )
+            else:
+                student.append(
+                    f"{birth[DEFAULT_FIRSTNAME_KEY]} {birth[DEFAULT_NAME_KEY]}"
+                )
+        if len(student) > 0:
+            sentence = "Aujourd'hui nous souhaitons l'anniversaire de: "
+            for birth in student:
+                sentence += f"\n- {birth}"
+
+        if len(celebrities) > 0:
+            sentence += f"\n\n N'oublions pas ces personnages:"
+            for birth in celebrities:
+                sentence += f"\n- {birth}: <https://fr.wikipedia.org/wiki/{birth.replace(' ', '_')}>"
 
         logger_main.debug(f"Sentence value: {sentence}")
 

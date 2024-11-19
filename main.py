@@ -161,7 +161,7 @@ async def birthday_reminder(
                 sentence += f"\n- {birth}"
 
         if len(celebrities) > 0:
-            sentence += f"\n\n N'oublions pas ces personnages:"
+            sentence += f"\n N'oublions pas ces personnages:"
             for birth in celebrities:
                 sentence += f"\n- {birth}: <https://fr.wikipedia.org/wiki/{birth.replace(' ', '_')}>"
 

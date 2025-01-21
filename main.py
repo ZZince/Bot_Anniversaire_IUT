@@ -2,7 +2,6 @@ import datetime
 import logging
 import asyncio
 import os
-import time
 from platform import system
 from urllib3 import disable_warnings
 from urllib3.exceptions import InsecureRequestWarning
@@ -15,12 +14,10 @@ from constants import (
     DEFAULT_FIRSTNAME_KEY,
     DEFAULT_NAME_KEY,
     DEFAULT_GENERAL_CHANNEL,
-    DEFAULT_TIMEZONE,
     DEFAULT_CELEBRITE_KEY,
     DEFAULT_ANCIEN_KEY,
     DEFAULT_TOPIC,
 )
-
 
 intents = Intents.default()
 bot: Bot = Bot(intents=intents)
@@ -139,8 +136,12 @@ async def birthday_reminder(
         date=datetime.datetime.now(), logger=logger_main
     )
     all_birthday = [
-        birth for birth in all_birthday if birth["formation"] != DEFAULT_ANCIEN_KEY
+        birth
+        for birth in all_birthday
+        if birth["formation"].upper() != DEFAULT_ANCIEN_KEY
     ]
+
+    logger_main.debug(f"Tous les anniversaires récupérés: {all_birthday}")
 
     if all_birthday is not None:
         student: list[str] = []
@@ -215,15 +216,10 @@ if __name__ == "__main__":
         InsecureRequestWarning
     )  # Disable preventiv messages from requets module
 
-    # Change local timezone
-    if system() == "Linux":
-        os.environ["TZ"] = DEFAULT_TIMEZONE
-        time.tzset()
-
     log_format = (
         "%(asctime)s | %(levelname)s | %(filename)s | %(funcName)s : %(message)s"
     )
-    log_level = logging.INFO
+    log_level = logging.DEBUG
 
     logging.basicConfig(
         level=log_level,
